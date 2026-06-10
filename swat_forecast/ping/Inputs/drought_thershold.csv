@@ -1,0 +1,125 @@
+"cpnm","crop_nm","max_wtr_s_days","min_wtr_s_days","sum_period"
+"WMEL","Watermelon","10","5",10
+"WMEI","Watermelon_IRR","10","5",10
+"WETX","Wetlands-Forested_IRR","18","9",18
+"WETF","Wetlands-Forested","18","9",18
+"WEAT","Wheat","10","5",10
+"VINI","Vineyard_IRR","18","9",18
+"VINE","Vineyard","18","9",18
+"VEGI","Vegetables_IRR","18","9",18
+"VEGE","Vegetables","18","9",18
+"ULRI","Upland rice_IRR","10","5",10
+"ULRC","Upland Rice","10","5",10
+"TOMI","Tomato_IRR","10","5",10
+"TOMA","Tomato","10","5",10
+"TOBI","Tobacco_IRR","10","5",10
+"TOBC","Tobacco","10","5",10
+"TEAK","Teak","18","9",18
+"TEAI","Teak_IRR","18","9",18
+"TEA","Tea","18","9",18
+"TARO","Taro","10","5",10
+"TARI","Taro_IRR","10","5",10
+"TAMR","Tamarind","18","9",18
+"TAMI","Tamarind_IRR","18","9",18
+"SUNF","Sunflower","10","5",10
+"SUGI","Sugarcane_IRR","16","8",16
+"SUGC","Sugarcane","16","8",16
+"STRW","Strawberry","18","9",18
+"SSAM","Sesame","10","5",10
+"SPOT","Sweetpotato","10","5",10
+"SPOI","Sweetpotato_IRR","10","5",10
+"SOYI","Soybean_IRR","10","5",10
+"SOYB","Soybean","10","5",10
+"SORG","Sorghum","10","5",10
+"SESI","Sesame_IRR","10","5",10
+"RUBR","Rubber Trees","18","9",18
+"RUBI","Rubber Trees_IRR","18","9",18
+"RNGI","Range-Brush_IRR","18","9",18
+"RNGE","Range-Grasses","18","9",18
+"RNGB","Range-Brush","18","9",18
+"RICI","Rice_IRR","5","2",5
+"RICE","Rice","5","2",5
+"REDB","Red bean","10","5",10
+"RAMI","Rambutan_IRR","18","9",18
+"RAMB","Rambutan","18","9",18
+"PSFR","Passion fruit","18","9",18
+"PSFI","Passion fruit_IRR","18","9",18
+"POTI","Potato_IRR","10","5",10
+"POTA","Potato","10","5",10
+"POMI","Pomelo_IRR","18","9",18
+"POME","Pomelo","18","9",18
+"PNUT","Peanut","10","5",10
+"PNUI","Peanut_IRR","10","5",10
+"PINP","Pineapple","16","8",16
+"PINI","Pineapple_IRR","16","8",16
+"PEPP","Peppers","18","9",18
+"PEPI","Pepper_IRR","18","9",18
+"PAST","Pasture","18","9",18
+"PASI","Pasture_IRR","18","9",18
+"PAPI","Papayas_IRR","18","9",18
+"PAPA","Papayas","18","9",18
+"OTTR","Other Trees","18","9",18
+"OTTI","Other Trees_IRR","18","9",18
+"OTOR","Other Orchards","18","9",18
+"OTOI","Other Orchards_IRR","18","9",18
+"OTFI","Other field crop_IRR","10","5",10
+"ORAN","Orange","18","9",18
+"ORAI","Orange_IRR","18","9",18
+"OILP","Oil Palm","18","9",18
+"OILI","Oil Palm_IRR","18","9",18
+"MXTR","Mixed Trees","18","9",18
+"MXTI","Mixed Trees_IRR","18","9",18
+"MXOR","Mixed Orchards","18","9",18
+"MXOI","Mixed Orchards_IRR","18","9",18
+"MXHI","Mixed horticulture_IRR","18","9",18
+"MXHC","Mixed horticulture","18","9",18
+"MXFI","Mixed field crop_IRR","10","5",10
+"MXFC","Mixed field crop","10","5",10
+"MUNI","Mung bean_IRR","10","5",10
+"MUNG","Mung Beans","10","5",10
+"MTAM","Manila Tamarind","18","9",18
+"MTAI","Manila Tamarind_IRR","18","9",18
+"MILL","Pearl Millet","10","5",10
+"MANI","Mango_IRR","18","9",18
+"MANG","Mango","18","9",18
+"LONI","Longan_IRR","18","9",18
+"LONG","Longan","18","9",18
+"LITI","Litchi_IRR","18","9",18
+"LITC","Litchi","18","9",18
+"JPOT","Jam potato","10","5",10
+"HERI","Herbs_IRR","18","9",18
+"HERB","Herbs","18","9",18
+"GPTT","Grass plantation","18","9",18
+"GPTI","Grass plantation_IRR","18","9",18
+"FRSM","Forest-Mangrove","18","9",18
+"FRSI","Forest-Mangrove_IRR","18","9",18
+"FRSE","Forest-Evergreen","18","9",18
+"FRSD","Forest-Deciduous","18","9",18
+"FREI","Forest-Evergreen_IRR","18","9",18
+"FRDI","Forest-Deciduous_IRR","18","9",18
+"FLOR","Floricultural","18","9",18
+"FLII","Floricultural_IRR","18","9",18
+"EUCI","Eucalyptus_IRR","18","9",18
+"EUCA","Eucalyptus","18","9",18
+"DURN","Durian","18","9",18
+"DURI","Durian_IRR","18","9",18
+"COTT","Cotton","16","8",16
+"COTI","Cotton_IRR","16","8",16
+"CORN","Corn","10","5",10
+"CORI","Corn_IRR","10","5",10
+"COFF","Coffee","18","9",18
+"COCO","Coconut","18","9",18
+"COCI","Coconut_IRR","18","9",18
+"CAVI","Cassava_IRR","16","8",16
+"CASV","Cassava","16","8",16
+"CASH","Cashews","18","9",18
+"CANT","Cantaloupe","10","5",10
+"CAHI","Cashews_IRR","18","9",18
+"CABG","Cabbage","10","5",10
+"BARL","Barley","10","5",10
+"BANI","Bananas_IRR","18","9",18
+"BANA","Bananas","18","9",18
+"BAMI","Bamboo_IRR","18","9",18
+"BAMB","Bamboo","18","9",18
+"ASPR","Asparagus","18","9",18
+"ASPI","Asparagus_IRR","18","9",18

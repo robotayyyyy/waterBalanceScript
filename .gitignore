@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Environment files
+.env
+
+# Virtual environments
+swat_forecast/env/
+historical_data/env/
+
+# Large binary archives (stored on Google Drive, downloaded via make download-drive)
+swat_file_DB/
+
+# SWAT model TxtInOut dirs (unpacked from Drive zips by make unpack-all)
+swat_forecast/yom/week/TxtInOut/
+swat_forecast/yom/month/TxtInOut/
+swat_forecast/ping/week/TxtInOut/
+swat_forecast/ping/month/TxtInOut/
+
+# SWAT executable (unpacked from swat_rev688.zip)
+swat_forecast/swat_rev688/
+
+# Runtime dirs (regenerated each run)
+swat_forecast/yom/week/Results/
+swat_forecast/yom/week/Results_staging/
+swat_forecast/yom/week/Logs/
+swat_forecast/yom/week/Alerts/
+swat_forecast/yom/week/Import_input/
+swat_forecast/yom/week/Imported/
+swat_forecast/yom/month/Results/
+swat_forecast/yom/month/Results_staging/
+swat_forecast/yom/month/Logs/
+swat_forecast/yom/month/Alerts/
+swat_forecast/yom/month/Import_input/
+swat_forecast/yom/month/Imported/
+swat_forecast/ping/week/Results/
+swat_forecast/ping/week/Results_staging/
+swat_forecast/ping/week/Logs/
+swat_forecast/ping/week/Alerts/
+swat_forecast/ping/week/Import_input/
+swat_forecast/ping/week/Imported/
+swat_forecast/ping/month/Results/
+swat_forecast/ping/month/Results_staging/
+swat_forecast/ping/month/Logs/
+swat_forecast/ping/month/Alerts/
+swat_forecast/ping/month/Import_input/
+swat_forecast/ping/month/Imported/
+
+# Historical SWAT output CSVs (large data files, stored on Google Drive)
+historical_data/ping/
+historical_data/yom/

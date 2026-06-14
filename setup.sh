@@ -24,7 +24,7 @@ python3 -m venv "$HIST_DIR/env"
 echo "    OK: $HIST_DIR/env"
 
 echo "=== [4/5] Download zips from Google Drive ==="
-pip install -q gdown
+"$FORE_DIR/env/bin/pip" install -q gdown
 make -C "$ROOT_DIR" download-drive
 
 echo "=== [5/5] Unpack TxtInOut + swat_rev688 ==="

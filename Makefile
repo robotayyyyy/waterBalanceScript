@@ -124,7 +124,7 @@ full-run: run-all-forecast import-historical ## Full pipeline: forecast (DELETE+
 
 download-drive: ## Download all zips from Google Drive into swat_file_DB/
 	mkdir -p $(FILE_DB)
-	gdown --folder $(DRIVE_URL) -O $(FILE_DB)
+	$(PYTHON_F) -m gdown --folder $(DRIVE_URL) -O $(FILE_DB)
 
 unpack-yom: ## Unpack yom_week/month_TxtInOut.zip into yom/week/ and yom/month/
 	mkdir -p $(FORE_DIR)/yom/week  && unzip -o $(FILE_DB)/yom_week_TxtInOut.zip  -d $(FORE_DIR)/yom/week

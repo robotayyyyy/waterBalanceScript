@@ -217,6 +217,9 @@ SMTP_PASS=<password>
 ALERT_EMAIL=email1@example.com,email2@example.com   # comma-separated
 
 HII_BASE_URL=https://tiservice.hii.or.th/water_balance
+
+# Set to false to skip DB saving (useful for teammates without a local DB)
+SWAT_SAVE_DB=true
 ```
 
 ### Allow Machine B to connect to Machine A's PostgreSQL
@@ -239,6 +242,7 @@ nc -zv <MachineA-IP> 5432
 
 ```
 make setup              First-time setup: venvs + Drive download + unpack
+make check-db           Test DB connection
 make full-run           Full pipeline: forecast (DELETE+INSERT) then historical append
 make run-all-forecast   Run all 4 SWAT pipelines + DB import (no historical)
 make run-week-yom       Weekly Yom SWAT run + import
@@ -254,6 +258,9 @@ make clear-ping         Delete only Ping rows (mb_code=06)
 make clear-yom          Delete only Yom rows (mb_code=08)
 make download-drive     Download all 7 zips from Google Drive
 make unpack-all         Unpack all zips (TxtInOut + swat_rev688 + historical)
+make install-cron       Install all pipeline cron jobs + log rotation
+make uninstall-cron     Remove this project's cron jobs (leaves others untouched)
+make show-cron          Show current crontab
 ```
 
 ---
@@ -261,16 +268,12 @@ make unpack-all         Unpack all zips (TxtInOut + swat_rev688 + historical)
 ## Cron Setup (Recommended)
 
 ```bash
-crontab -e
+make install-cron    # add all 4 pipelines + log cleanup to crontab
+make show-cron       # verify what's installed
+make uninstall-cron  # remove only this project's entries (other cron jobs are untouched)
 ```
 
-```
-# Weekly — every Monday 01:00
-0 1 * * 1  cd /path/to/waterBalanceScript && make full-run >> /var/log/swat-week.log 2>&1
-
-# Monthly — 1st of each month 02:00
-0 2 1 * *  cd /path/to/waterBalanceScript && make run-month-yom run-month-ping >> /var/log/swat-month.log 2>&1
-```
+Runs all four pipelines daily at 01:00–01:10 and cleans logs older than 90 days at 01:15. Re-running `install-cron` is idempotent — it replaces existing entries for this project.
 
 ---
 
@@ -359,6 +362,8 @@ Expected output shows row counts and min/max `date_sim` per table per basin. Zer
 | Email not sent | SMTP credentials wrong or `ALERT_EMAIL` empty | Test SMTP credentials; verify `.env` has `ALERT_EMAIL` set |
 | `gdown` auth error | Google Drive requires sign-in | Check folder sharing is set to "Anyone with the link" |
 | Historical data missing after fresh setup | `unpack-historical` not run | Run `make unpack-historical` then `make import-historical` |
+| Teammate has no DB — import fails | DB not available on their machine | Set `SWAT_SAVE_DB=false` in `.env` to skip DB saving; import steps are marked SKIPPED in the summary email |
+| `Permission denied` on `run_state.json` | Previous run used `sudo`, file owned by root | Run `sudo chown -R <user> /path/to/waterBalanceScript/swat_forecast/`; never use `sudo` with `make` |
 
 ---
 

@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## core behavior
+- if you are not sure -> ask me
+- in case have the plan for implement, if anything not in the plan -> do not do that
+- if the plan need to be change or append -> ask me
+
 ## Project
 
 SWAT water balance automation pipeline for Thailand river basins. Runs SWAT simulations, aggregates outputs, and imports results into the WaterF PostgreSQL DB.

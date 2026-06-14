@@ -1,3 +1,4 @@
+import json
 import shutil
 import sys
 import os
@@ -42,12 +43,19 @@ if __name__ == "__main__":
     # Grab all automatically generated paths (Including flow_csv, dot_day, release_csv, dot_dat)
     paths = get_pipeline_paths()
 
+    _sim_success = False
+    _sim_error = None
+    sim_start_str = None
+    sim_end_str = None
+
     try:
         # Step 1.1: Download, Check, and Save to Import Folder
         run_data_import(basin_id="06", input_dir=str(RAW_INPUT_DIR), imported_dir=str(IMPORTED_CSV_DIR), files=input_files, alert_dir=str(ALERT_DIR), logger=logger)
-        
+
         # Step 1.2: Find Simulation Date
         sim_start, sim_end, f_start, f_end = get_project_dates(str(IMPORTED_CSV_DIR))
+        sim_start_str = sim_start.strftime("%Y-%m-%d")
+        sim_end_str = sim_end.strftime("%Y-%m-%d")
         
         # Step 1.3: Write Inputs for SWAT (Climate, Reservoir, and Point Source files)
         run_write_input(
@@ -69,6 +77,7 @@ if __name__ == "__main__":
 
         if not sim_success:
             logger.error("Simulation Failed. Analysis will not proceed.")
+            _sim_error = "SWAT simulation failed"
             sys.exit(1)
 
         # Step 2: Run Analysis Pipeline
@@ -93,12 +102,28 @@ if __name__ == "__main__":
             logger=logger)
         
         if pipeline_failed:
-                logger.error("Analysis FAILED, The final 'Results' folder was NOT updated.")
+            logger.error("Analysis FAILED, The final 'Results' folder was NOT updated.")
+            _sim_error = "Analysis failed, Results not updated"
         else:
             if FINAL_OUTPUT_DIR.exists(): shutil.rmtree(FINAL_OUTPUT_DIR)
             STAGING_DIR.rename(FINAL_OUTPUT_DIR)
             logger.info("SUCCESS: Final 'Results' directory successfully updated.")
+            _sim_success = True
 
     except Exception as fatal_e:
         logger.error(f"FATAL PIPELINE ERROR: {str(fatal_e)}")
+        _sim_error = str(fatal_e)
         sys.exit(1)
+
+    finally:
+        try:
+            entry = {"step": "simulation", "success": _sim_success,
+                     "sim_start": sim_start_str, "sim_end": sim_end_str}
+            if _sim_error:
+                entry["error"] = _sim_error
+            state_file = LOG_DIR / "run_state.json"
+            existing = json.loads(state_file.read_text()) if state_file.exists() else []
+            existing.append(entry)
+            state_file.write_text(json.dumps(existing, indent=2))
+        except Exception:
+            pass

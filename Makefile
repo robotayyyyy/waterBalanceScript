@@ -16,6 +16,11 @@ PYTHON    = $(SWAT_DIR)/env/bin/python3
 PYTHON_F  = $(FORE_DIR)/env/bin/python3
 PYTHON_H  = $(HIST_DIR)/env/bin/python3
 
+YOM_W_LOG := $(FORE_DIR)/yom/week/Logs
+YOM_M_LOG := $(FORE_DIR)/yom/month/Logs
+PNG_W_LOG := $(FORE_DIR)/ping/week/Logs
+PNG_M_LOG := $(FORE_DIR)/ping/month/Logs
+
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*?##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
@@ -23,37 +28,53 @@ setup: ## First-time setup: venv + download from Drive + unpack
 	bash $(ROOT_DIR)/setup.sh
 
 check-db: ## Test DB connection
-	cd $(SWAT_DIR) && $(PYTHON) check_db.py
+	$(PYTHON_F) $(FORE_DIR)/check_db.py
 
 # ── Forecast (live) — DELETE+INSERT per basin ────────────────────────────────
 
-run-week-yom: ## Forecast: run Yom weekly SWAT + import to DB
-	cd $(FORE_DIR)/yom && $(PYTHON_F) week.py
-	cd $(FORE_DIR) && $(PYTHON_F) yom/import_basin_7days.py \
-		&& $(PYTHON_F) yom/import_admin_7days.py \
-		&& $(PYTHON_F) yom/import_basin_daily.py \
-		&& $(PYTHON_F) yom/import_admin_daily.py
+run-week-yom: ## Forecast: run Yom weekly SWAT + import to DB + summary email
+	mkdir -p $(YOM_W_LOG) && rm -f $(YOM_W_LOG)/run_state.json
+	(export SWAT_LOG_DIR=$(YOM_W_LOG) && \
+	 cd $(FORE_DIR)/yom && $(PYTHON_F) week.py && \
+	 cd $(FORE_DIR) && \
+	 $(PYTHON_F) yom/import_basin_7days.py && \
+	 $(PYTHON_F) yom/import_admin_7days.py && \
+	 $(PYTHON_F) yom/import_basin_daily.py && \
+	 $(PYTHON_F) yom/import_admin_daily.py) ; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py week yom
 
-run-month-yom: ## Forecast: run Yom monthly SWAT + import to DB (skips imports if SWAT fails)
-	cd $(FORE_DIR)/yom && $(PYTHON_F) month.py \
-		&& cd $(FORE_DIR) && $(PYTHON_F) yom/import_basin_6months.py \
-		&& $(PYTHON_F) yom/import_admin_6months.py \
-		&& $(PYTHON_F) yom/import_basin_daily.py \
-		&& $(PYTHON_F) yom/import_admin_daily.py
+run-month-yom: ## Forecast: run Yom monthly SWAT + import to DB + summary email
+	mkdir -p $(YOM_M_LOG) && rm -f $(YOM_M_LOG)/run_state.json
+	(export SWAT_LOG_DIR=$(YOM_M_LOG) && \
+	 cd $(FORE_DIR)/yom && $(PYTHON_F) month.py && \
+	 cd $(FORE_DIR) && \
+	 $(PYTHON_F) yom/import_basin_6months.py && \
+	 $(PYTHON_F) yom/import_admin_6months.py && \
+	 $(PYTHON_F) yom/import_basin_daily.py && \
+	 $(PYTHON_F) yom/import_admin_daily.py) ; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py month yom
 
-run-week-ping: ## Forecast: run Ping weekly SWAT + import to DB
-	cd $(FORE_DIR)/ping && $(PYTHON_F) week.py
-	cd $(FORE_DIR) && $(PYTHON_F) ping/import_basin_7days.py \
-		&& $(PYTHON_F) ping/import_admin_7days.py \
-		&& $(PYTHON_F) ping/import_basin_daily.py \
-		&& $(PYTHON_F) ping/import_admin_daily.py
+run-week-ping: ## Forecast: run Ping weekly SWAT + import to DB + summary email
+	mkdir -p $(PNG_W_LOG) && rm -f $(PNG_W_LOG)/run_state.json
+	(export SWAT_LOG_DIR=$(PNG_W_LOG) && \
+	 cd $(FORE_DIR)/ping && $(PYTHON_F) week.py && \
+	 cd $(FORE_DIR) && \
+	 $(PYTHON_F) ping/import_basin_7days.py && \
+	 $(PYTHON_F) ping/import_admin_7days.py && \
+	 $(PYTHON_F) ping/import_basin_daily.py && \
+	 $(PYTHON_F) ping/import_admin_daily.py) ; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py week ping
 
-run-month-ping: ## Forecast: run Ping monthly SWAT + import to DB (skips imports if SWAT fails)
-	cd $(FORE_DIR)/ping && $(PYTHON_F) month.py \
-		&& cd $(FORE_DIR) && $(PYTHON_F) ping/import_basin_6months.py \
-		&& $(PYTHON_F) ping/import_admin_6months.py \
-		&& $(PYTHON_F) ping/import_basin_daily.py \
-		&& $(PYTHON_F) ping/import_admin_daily.py
+run-month-ping: ## Forecast: run Ping monthly SWAT + import to DB + summary email
+	mkdir -p $(PNG_M_LOG) && rm -f $(PNG_M_LOG)/run_state.json
+	(export SWAT_LOG_DIR=$(PNG_M_LOG) && \
+	 cd $(FORE_DIR)/ping && $(PYTHON_F) month.py && \
+	 cd $(FORE_DIR) && \
+	 $(PYTHON_F) ping/import_basin_6months.py && \
+	 $(PYTHON_F) ping/import_admin_6months.py && \
+	 $(PYTHON_F) ping/import_basin_daily.py && \
+	 $(PYTHON_F) ping/import_admin_daily.py) ; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py month ping
 
 run-all-forecast: run-week-yom run-week-ping ## Forecast: run ALL (weeks always run; months skipped if data unavailable)
 	-$(MAKE) run-month-yom

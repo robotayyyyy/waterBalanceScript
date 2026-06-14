@@ -8,10 +8,15 @@ Reads from:  month/Results/
   Tambol_Monthly.csv    → forecast_tambon_6months
 """
 
+import logging
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from _db import copy_insert, read_csv, run, to_int, to_num, year_mon_to_date
 
 ROOT = Path(__file__).parent
+log = logging.getLogger("SWAT_Weekly_Pipeline")
 
 BASINS = {
     "Ping": {"results_dir": ROOT / "month/Results", "mb_code": "06"},
@@ -21,7 +26,7 @@ MB_CODES = [cfg["mb_code"] for cfg in BASINS.values()]
 
 
 def import_province(cur):
-    print("\n[1/3] Province_Monthly.csv → forecast_province_6months")
+    log.info("[1/3] Province_Monthly.csv → forecast_province_6months")
     columns = ["date_sim", "mb_code", "province_id", "province",
                "rainfall", "reservoir", "watersupply",
                "water_demand", "water_balance", "drought_index", "runoff_index", "wb_level"]
@@ -30,7 +35,7 @@ def import_province(cur):
     for basin, cfg in BASINS.items():
         path = cfg["results_dir"] / "Province_Monthly.csv"
         if not path.exists():
-            print(f"  SKIP {basin}: {path} not found")
+            log.warning(f"SKIP {basin}: {path} not found")
             continue
         headers, raw = read_csv(path)
         for r in raw:
@@ -49,15 +54,16 @@ def import_province(cur):
                 to_int(row.get("RunoffIndex", "")),
                 to_num(row.get("WB_level", "")),
             ])
-        print(f"  {basin}: {len(raw)} rows")
+        log.info(f"  {basin}: {len(raw)} rows")
 
     cur.execute("DELETE FROM forecast_province_6months WHERE mb_code = ANY(%s)", (MB_CODES,))
     copy_insert(cur, "forecast_province_6months", columns, all_rows)
-    print(f"  ✓ {len(all_rows)} total rows inserted")
+    log.info(f"SUCCESS: {len(all_rows)} rows → forecast_province_6months")
+    return {"table": "forecast_province_6months", "rows": len(all_rows)}
 
 
 def import_amphoe(cur):
-    print("\n[2/3] Amphoe_Monthly.csv → forecast_amphoe_6months")
+    log.info("[2/3] Amphoe_Monthly.csv → forecast_amphoe_6months")
     columns = ["date_sim", "mb_code", "amphoe_id", "amphoe", "province_id", "province",
                "rainfall", "reservoir", "watersupply",
                "water_demand", "water_balance", "drought_index", "runoff_index", "wb_level"]
@@ -66,7 +72,7 @@ def import_amphoe(cur):
     for basin, cfg in BASINS.items():
         path = cfg["results_dir"] / "Amphoe_Monthly.csv"
         if not path.exists():
-            print(f"  SKIP {basin}: {path} not found")
+            log.warning(f"SKIP {basin}: {path} not found")
             continue
         headers, raw = read_csv(path)
         for r in raw:
@@ -87,15 +93,16 @@ def import_amphoe(cur):
                 to_int(row.get("RunoffIndex", "")),
                 to_num(row.get("WB_level", "")),
             ])
-        print(f"  {basin}: {len(raw)} rows")
+        log.info(f"  {basin}: {len(raw)} rows")
 
     cur.execute("DELETE FROM forecast_amphoe_6months WHERE mb_code = ANY(%s)", (MB_CODES,))
     copy_insert(cur, "forecast_amphoe_6months", columns, all_rows)
-    print(f"  ✓ {len(all_rows)} total rows inserted")
+    log.info(f"SUCCESS: {len(all_rows)} rows → forecast_amphoe_6months")
+    return {"table": "forecast_amphoe_6months", "rows": len(all_rows)}
 
 
 def import_tambon(cur):
-    print("\n[3/3] Tambol_Monthly.csv → forecast_tambon_6months")
+    log.info("[3/3] Tambol_Monthly.csv → forecast_tambon_6months")
     columns = ["date_sim", "mb_code", "tambon_id", "tambon", "amphoe_id", "amphoe",
                "province_id", "province",
                "rainfall", "reservoir", "watersupply",
@@ -105,7 +112,7 @@ def import_tambon(cur):
     for basin, cfg in BASINS.items():
         path = cfg["results_dir"] / "Tambol_Monthly.csv"
         if not path.exists():
-            print(f"  SKIP {basin}: {path} not found")
+            log.warning(f"SKIP {basin}: {path} not found")
             continue
         headers, raw = read_csv(path)
         for r in raw:
@@ -128,12 +135,15 @@ def import_tambon(cur):
                 to_int(row.get("RunoffIndex", "")),
                 to_num(row.get("WB_level", "")),
             ])
-        print(f"  {basin}: {len(raw)} rows")
+        log.info(f"  {basin}: {len(raw)} rows")
 
     cur.execute("DELETE FROM forecast_tambon_6months WHERE mb_code = ANY(%s)", (MB_CODES,))
     copy_insert(cur, "forecast_tambon_6months", columns, all_rows)
-    print(f"  ✓ {len(all_rows)} total rows inserted")
+    log.info(f"SUCCESS: {len(all_rows)} rows → forecast_tambon_6months")
+    return {"table": "forecast_tambon_6months", "rows": len(all_rows)}
 
 
 if __name__ == "__main__":
-    run([import_province, import_amphoe, import_tambon])
+    run([import_province, import_amphoe, import_tambon],
+        log_dir=ROOT / "month" / "Logs",
+        script_name="import_admin_6months")

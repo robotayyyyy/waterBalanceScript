@@ -102,7 +102,7 @@ def generate_email_alert(state_tracker: dict, output_path: str, phase_name: str 
     output_dir = os.path.dirname(str(output_path))
     if output_dir: os.makedirs(output_dir, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f: f.write("\n".join(lines))
-    if counts["FAILED"] > 0: send_email_alert(f"[SWAT FAILED] Phase: {phase_name}", "\n".join(lines))
+    # email suppressed: summary email sent by send_summary.py at end of pipeline run
     return "\n".join(lines)
 
 def _date_to_julian(date_val):

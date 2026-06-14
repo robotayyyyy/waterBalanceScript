@@ -127,6 +127,14 @@ def run(importers, log_dir=None, script_name=None):
     label = script_name or "import"
     log_path = str(log_file) if log_file else None
 
+    # Feature flag: SWAT_SAVE_DB=false skips DB entirely (for teammates without a DB)
+    if os.getenv("SWAT_SAVE_DB", "true").strip().lower() == "false":
+        logger.info("DB saving disabled (SWAT_SAVE_DB=false), skipping import.")
+        entry = {"step": label, "success": True, "skipped": True, "tables": [], "log_file": log_path}
+        if state_file:
+            _append_state(state_file, entry)
+        return entry
+
     step = "DB connection"
     conn = None
     tables = []

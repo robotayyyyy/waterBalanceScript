@@ -76,6 +76,8 @@ def main(mode, basin):
         if entry is None:
             lines.append(f"  {label:<18} –  NOT RUN")
             overall_ok = False
+        elif entry.get("skipped"):
+            lines.append(f"  {label:<18} –  SKIPPED (DB disabled)")
         elif entry["success"]:
             lines.append(f"  {label:<18} ✓")
             for t in entry.get("tables", []):

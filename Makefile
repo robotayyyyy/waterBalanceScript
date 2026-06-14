@@ -4,7 +4,7 @@
         reimport-forecast reimport-all clear-db \
         download-drive unpack-yom unpack-ping unpack-swat unpack-historical unpack-all print-swat-dir \
         import-historical clear-ping clear-yom verify-db \
-        full-run
+        full-run install-cron uninstall-cron show-cron
 
 ROOT_DIR  := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 SWAT_DIR  := $(ROOT_DIR)/swat
@@ -156,3 +156,20 @@ print-swat-dir: ## Print resolved directory paths
 	@echo "SWAT_DIR : $(SWAT_DIR)"
 	@echo "FORE_DIR : $(FORE_DIR)"
 	@echo "HIST_DIR : $(HIST_DIR)"
+
+install-cron: ## Install daily cron jobs for all pipelines + monthly log cleanup
+	(crontab -l 2>/dev/null | grep -vF "$(ROOT_DIR)"; \
+	 echo "0 1 * * *  cd $(ROOT_DIR) && make run-week-yom >> $(YOM_W_LOG)/cron.log 2>&1"; \
+	 echo "2 1 * * *  cd $(ROOT_DIR) && make run-week-ping >> $(PNG_W_LOG)/cron.log 2>&1"; \
+	 echo "5 1 * * *  cd $(ROOT_DIR) && make run-month-yom >> $(YOM_M_LOG)/cron.log 2>&1"; \
+	 echo "10 1 * * *  cd $(ROOT_DIR) && make run-month-ping >> $(PNG_M_LOG)/cron.log 2>&1"; \
+	 echo "15 1 * * *  find $(FORE_DIR)/*/*/Logs -name '*.log' -mtime +90 -delete") | crontab -
+	@echo "Cron installed:"
+	@crontab -l
+
+uninstall-cron: ## Remove all cron jobs for this project (leaves other cron entries untouched)
+	crontab -l 2>/dev/null | grep -vF "$(ROOT_DIR)" | crontab -
+	@echo "Cron entries for $(ROOT_DIR) removed."
+
+show-cron: ## Show current crontab
+	@crontab -l 2>/dev/null | grep . || echo "(no crontab installed)"

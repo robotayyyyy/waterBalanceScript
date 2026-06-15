@@ -155,22 +155,12 @@ def apply_wb_level(df, thresh_path, merge_col, how='left'):
         (wb_adj > c50_adj)
     ]
     
-    def safe_div(num, den):
-        return np.where(den == 0, 0.0, num / den)
-        
     # Dynamically interpolate exact fraction across the 10-point scale
     choices = [
-        0.0,
-        0  + 10 * safe_div(wb_adj - c0_adj, c10_adj - c0_adj),
-        10 + 10 * safe_div(wb_adj - c10_adj, c20_adj - c10_adj),
-        20 + 10 * safe_div(wb_adj - c20_adj, c30_adj - c20_adj),
-        30 + 10 * safe_div(wb_adj - c30_adj, c40_adj - c30_adj),
-        40 + 10 * safe_div(wb_adj - c40_adj, c50_adj - c40_adj),
-        50 + 10 * safe_div(wb_adj - c50_adj, c50_adj - c40_adj) # Allows slope projection past >50
+        0,1,2,3,4,5,6 # Allows slope projection past >50
     ]
     
     res['WB_level'] = np.select(conds, choices, default=np.nan)
-    res['WB_level'] = pd.to_numeric(res['WB_level'], errors='coerce').round(2)
     
     drop_cols = ['critical_0_level', 'critical_10_level', 'critical_20_level', 'critical_30_level', 'critical_40_level', 'critical_50_level']
     res.drop(columns=[c for c in drop_cols if c in res.columns], inplace=True)

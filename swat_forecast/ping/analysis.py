@@ -154,12 +154,9 @@ def apply_wb_level(df, thresh_path, merge_col, how='left'):
         (wb_adj > c40_adj) & (wb_adj <= c50_adj),
         (wb_adj > c50_adj)
     ]
-    
-    # Dynamically interpolate exact fraction across the 10-point scale
-    choices = [
-        0,1,2,3,4,5,6 # Allows slope projection past >50
-    ]
-    
+
+    choices = [0, 1, 2, 3, 4, 5, 6]
+
     res['WB_level'] = np.select(conds, choices, default=np.nan)
     
     drop_cols = ['critical_0_level', 'critical_10_level', 'critical_20_level', 'critical_30_level', 'critical_40_level', 'critical_50_level']
@@ -331,6 +328,18 @@ def calculate_rainfall(imported_rain_csv, out_path, f_start, f_end, logger, stat
 # ==========================================
 # Integration and Aggregation
 # ==========================================     
+def _reorder_columns(df):
+    """Ensures metric columns are always in this exact requested order."""
+    metric_order = [
+        'WaterSupply', 'WaterDemand', 'WaterBalance', 'DroughtIndex', 
+        'RunoffIndex', 'WB_level', 'Rainfall', 'Reservoir'
+    ]
+    # Keep any ID columns (DateSim, Tambol_ID, etc.) on the left
+    id_cols = [c for c in df.columns if c not in metric_order and c != 'temp_date']
+    # Append the metrics in the strict order
+    final_cols = id_cols + [c for c in metric_order if c in df.columns]
+    return df[final_cols]
+
 def integrate_results(paths, out_path, mb_code, mb_name_t, logger):
     try:
         merged = pd.read_csv(paths['wb']).merge(pd.read_csv(paths['rain']), on=['DateSim', 'Sbswat'], how='outer')
@@ -344,7 +353,8 @@ def integrate_results(paths, out_path, mb_code, mb_name_t, logger):
         merged['MB_CODE'], merged['MB_NAME_T'] = mb_code, mb_name_t
         
         cols = [c for c in ['DateSim', 'Sbswat', 'MB_CODE', 'MB_NAME_T', 'Rainfall', 'Reservoir', 'WaterSupply', 'WaterDemand', 'WaterBalance', 'DroughtIndex', 'RunoffIndex', 'WB_level'] if c in merged.columns]
-        merged = merged[cols]
+        # Apply strict column order
+        merged = _reorder_columns(merged)
         merged['temp_date'] = pd.to_datetime(merged['DateSim'], format='%d/%m/%Y')
         merged.sort_values(by=['temp_date', 'Sbswat']).drop(columns=['temp_date']).to_csv(out_path, index=False, encoding='utf-8-sig')
         return True
@@ -373,6 +383,8 @@ def aggregate_daily_to_weekly_summary(daily_csv_path, output_dir, prefix, id_col
             if col in weekly_df.columns: 
                 weekly_df[col] = pd.to_numeric(weekly_df[col], errors='coerce').round().astype('Int64')
         
+        # Apply strict column order
+        weekly_df = _reorder_columns(weekly_df)
         weekly_df.sort_values(by=['DateSim'] + [id_cols[0]]).to_csv(output_dir / f"{prefix}_Weekly.csv", index=False, encoding='utf-8-sig')
         return True
     except Exception as e:
@@ -398,6 +410,8 @@ def aggregate_daily_to_monthly_summary(daily_csv_path, output_dir, prefix, id_co
             if col in monthly_df.columns: 
                 monthly_df[col] = pd.to_numeric(monthly_df[col], errors='coerce').round().astype('Int64')
         
+        # Apply strict column order        
+        monthly_df = _reorder_columns(monthly_df)
         monthly_df.sort_values(by=['YEAR', 'MON'] + [id_cols[0]]).to_csv(output_dir / f"{prefix}_Monthly.csv", index=False, encoding='utf-8-sig')
         return True
     except Exception as e:
@@ -407,10 +421,11 @@ def aggregate_daily_to_monthly_summary(daily_csv_path, output_dir, prefix, id_co
 def aggregate_admin(base_path, frac_path, out_dir, inputs, f_start, f_end, logger, state_tracker):
     try:
         df_merged = pd.merge(pd.read_csv(base_path), pd.read_csv(frac_path), on='Sbswat', how='inner')
-        for col in ['WaterSupply', 'WaterDemand', 'WaterBalance']:
-            if col in df_merged.columns: df_merged[col] *= df_merged['per_sbswat']
-        for col in ['Reservoir', 'DroughtIndex']:
-            if col in df_merged.columns: df_merged[col] *= df_merged['per_tambol']
+
+        target_cols = ['WaterSupply', 'WaterDemand', 'WaterBalance', 'Reservoir', 'DroughtIndex']
+        for col in target_cols:
+            if col in df_merged.columns: 
+                df_merged[col] *= df_merged['per_tambol']
 
         # --- Tambol ---
         group_cols = ['DateSim', 'Tambol_ID', 'Tambol', 'Amphoe_ID', 'Amphoe', 'Province_ID', 'Province']
@@ -424,6 +439,9 @@ def aggregate_admin(base_path, frac_path, out_dir, inputs, f_start, f_end, logge
         df_tambol = apply_wb_level(df_tambol, inputs['thresh_wb_tambol_day'], 'Tambol_ID')
         
         if 'DroughtIndex' in df_tambol.columns: df_tambol['DroughtIndex'] = df_tambol['DroughtIndex'].round().astype('Int64')
+        
+        # Apply strict column order
+        df_tambol = _reorder_columns(df_tambol)
         df_tambol['temp_date'] = pd.to_datetime(df_tambol['DateSim'], format='%d/%m/%Y')
         df_tambol.sort_values(by=['temp_date', 'Province_ID', 'Amphoe_ID', 'Tambol_ID']).drop(columns=['temp_date']).to_csv(out_dir / "Tambol_Daily.csv", index=False, encoding='utf-8-sig')
         
@@ -444,6 +462,9 @@ def aggregate_admin(base_path, frac_path, out_dir, inputs, f_start, f_end, logge
         df_amphoe = apply_wb_level(df_amphoe, inputs['thresh_wb_amphoe_day'], 'Amphoe_ID')
         
         if 'DroughtIndex' in df_amphoe.columns: df_amphoe['DroughtIndex'] = df_amphoe['DroughtIndex'].round().astype('Int64')
+        
+        # Apply strict column order
+        df_amphoe = _reorder_columns(df_amphoe)
         df_amphoe['temp_date'] = pd.to_datetime(df_amphoe['DateSim'], format='%d/%m/%Y')
         df_amphoe.sort_values(by=['temp_date', 'Province_ID', 'Amphoe_ID']).drop(columns=['temp_date']).to_csv(out_dir / "Amphoe_Daily.csv", index=False, encoding='utf-8-sig')
         
@@ -463,6 +484,9 @@ def aggregate_admin(base_path, frac_path, out_dir, inputs, f_start, f_end, logge
         df_prov = apply_wb_level(df_prov, inputs['thresh_wb_province_day'], 'Province_ID')
         
         if 'DroughtIndex' in df_prov.columns: df_prov['DroughtIndex'] = df_prov['DroughtIndex'].round().astype('Int64')
+        
+        # Apply strict column order
+        df_prov = _reorder_columns(df_prov)
         df_prov['temp_date'] = pd.to_datetime(df_prov['DateSim'], format='%d/%m/%Y')
         df_prov.sort_values(by=['temp_date', 'Province_ID']).drop(columns=['temp_date']).to_csv(out_dir / "Province_Daily.csv", index=False, encoding='utf-8-sig')
         
@@ -488,7 +512,10 @@ def aggregate_onwr(base_path, frac_path, out_dir, inputs, f_start, f_end, logger
         for col in t_cols:
             if col in df_merged.columns:
                 if df_merged[col].dtype == 'object': df_merged[col] = df_merged[col].astype(str).str.replace(',', '', regex=False)
-                df_merged[col] = pd.to_numeric(df_merged[col], errors='coerce') * df_merged['fraction']
+                df_merged[col] = pd.to_numeric(df_merged[col], errors='coerce')
+
+                if col == 'DroughtIndex':
+                    df_merged[col] = df_merged[col] * df_merged['fraction']
 
         # --- SBONWR ---
         group_sb = ['DateSim', 'SB_CODE', 'SB_NAME_T', 'MB_CODE', 'MB_NAME_T']
@@ -500,6 +527,9 @@ def aggregate_onwr(base_path, frac_path, out_dir, inputs, f_start, f_end, logger
         df_sb = apply_wb_level(df_sb, inputs['thresh_wb_sb_day'], 'SB_CODE')
         
         if 'DroughtIndex' in df_sb.columns: df_sb['DroughtIndex'] = df_sb['DroughtIndex'].round().astype('Int64')
+        
+        # Apply strict column order
+        df_sb = _reorder_columns(df_sb)
         df_sb['temp_date'] = pd.to_datetime(df_sb['DateSim'], format='%d/%m/%Y')
         df_sb = df_sb.sort_values(by=['temp_date', 'MB_CODE', 'SB_CODE']).drop(columns=['temp_date'])
         df_sb.to_csv(out_dir / "Sbonwr_Daily.csv", index=False, encoding='utf-8-sig')
@@ -520,6 +550,9 @@ def aggregate_onwr(base_path, frac_path, out_dir, inputs, f_start, f_end, logger
         df_mb = apply_wb_level(df_mb, inputs['thresh_wb_mb_day'], 'MB_CODE')
         
         if 'DroughtIndex' in df_mb.columns: df_mb['DroughtIndex'] = pd.to_numeric(df_mb['DroughtIndex'], errors='coerce').round().astype('Int64')
+        
+        # Apply strict column order
+        df_mb = _reorder_columns(df_mb)
         df_mb['temp_date'] = pd.to_datetime(df_mb['DateSim'], format='%d/%m/%Y')
         df_mb = df_mb.sort_values(by=['temp_date', 'MB_CODE']).drop(columns=['temp_date'])
         df_mb.to_csv(out_dir / "Bonwr_Daily.csv", index=False, encoding='utf-8-sig')

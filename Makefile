@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup check-db \
+.PHONY: help setup fix-permissions check-db \
         run-month-yom run-week-yom run-month-ping run-week-ping run-all-forecast \
         reimport-forecast reimport-all clear-db \
         download-drive unpack-yom unpack-ping unpack-swat unpack-historical unpack-all print-swat-dir \
@@ -26,6 +26,9 @@ help: ## Show available commands
 
 setup: ## First-time setup: venv + download from Drive + unpack
 	bash $(ROOT_DIR)/setup.sh
+
+fix-permissions: ## Fix ownership if project was first touched by root (run once)
+	sudo chown -R $(USER):$(USER) $(ROOT_DIR)
 
 check-db: ## Test DB connection
 	$(PYTHON_F) $(FORE_DIR)/check_db.py

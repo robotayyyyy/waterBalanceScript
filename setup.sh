@@ -6,9 +6,12 @@ FORE_DIR="$ROOT_DIR/swat_forecast"
 HIST_DIR="$ROOT_DIR/historical_data"
 
 echo "=== [1/5] Check python3-venv ==="
-if ! python3 -m venv --help > /dev/null 2>&1; then
-    echo "python3-venv missing. Installing (requires sudo)..."
-    sudo apt-get update && sudo apt-get install python3-venv python3-pip -y
+MISSING_PKGS=()
+python3 -m venv --help > /dev/null 2>&1 || MISSING_PKGS+=(python3-venv python3-pip)
+command -v unzip > /dev/null 2>&1 || MISSING_PKGS+=(unzip)
+if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+    echo "Installing missing packages: ${MISSING_PKGS[*]} (requires sudo)..."
+    sudo apt-get install -y "${MISSING_PKGS[@]}"
 fi
 
 echo "=== [2/5] Create forecast venv ==="

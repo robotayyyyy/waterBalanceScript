@@ -329,22 +329,17 @@ def calculate_rainfall(imported_rain_csv, out_path, f_start, f_end, logger, stat
 # Integration and Aggregation
 # ==========================================
 def _reorder_columns(df):
-    """Ensures metric columns are always in this exact requested order."""
     metric_order = [
         'WaterSupply', 'WaterDemand', 'WaterBalance', 'DroughtIndex', 
         'RunoffIndex', 'WB_level', 'Rainfall', 'Reservoir'
     ]
-    # Keep any ID columns (DateSim, Tambol_ID, etc.) on the left
     id_cols = [c for c in df.columns if c not in metric_order and c != 'temp_date']
-    # Append the metrics in the strict order
     final_cols = id_cols + [c for c in metric_order if c in df.columns]
     return df[final_cols]
 
 def integrate_results(paths, out_path, mb_code, mb_name_t, logger):
     try:
         merged = pd.read_csv(paths['wb']).merge(pd.read_csv(paths['rain']), on=['DateSim', 'Sbswat'], how='outer')
-        
-        # Merge the rest, including the new wb_level output
         for p in ['drought', 'runoff', 'wb_level', 'reservoir']:
             if os.path.exists(paths[p]):
                 merged = pd.merge(merged, pd.read_csv(paths[p]), on=['DateSim', 'Sbswat'], how='left')
@@ -371,7 +366,13 @@ def aggregate_daily_to_weekly_summary(daily_csv_path, output_dir, prefix, id_col
         df['week_start_date'] = f_start_dt + pd.to_timedelta((df['days_since_start'] // 7) * 7, unit='D')
         df['DateSim_Weekly'] = df['week_start_date'].dt.strftime('%d/%m/%Y')
         
-        rules = {col: 'sum' for col in ['WaterSupply', 'WaterDemand', 'WaterBalance', 'Reservoir', 'Rainfall'] if col in df.columns}
+        # 1. Define 'sum' for the water volume
+        rules = {col: 'sum' for col in ['WaterSupply', 'WaterDemand', 'WaterBalance'] if col in df.columns}
+        # 2. Define 'mean' for Reservoir and Rainfall
+        for col in ['Reservoir', 'Rainfall']:
+            if col in df.columns:
+                rules[col] = 'mean'
+        # 3. Define the rule for DroughtIndex
         if 'DroughtIndex' in df.columns: rules['DroughtIndex'] = get_mode_or_mean
 
         weekly_df = df.groupby(['DateSim_Weekly'] + id_cols, as_index=False).agg(rules).rename(columns={'DateSim_Weekly': 'DateSim'})
@@ -398,7 +399,13 @@ def aggregate_daily_to_monthly_summary(daily_csv_path, output_dir, prefix, id_co
         df['YEAR'] = df['temp_date'].dt.year
         df['MON'] = df['temp_date'].dt.month
         
-        rules = {col: 'sum' for col in ['WaterSupply', 'WaterDemand', 'WaterBalance', 'Reservoir', 'Rainfall'] if col in df.columns}
+        # 1. Define 'sum' for the water volume
+        rules = {col: 'sum' for col in ['WaterSupply', 'WaterDemand', 'WaterBalance'] if col in df.columns}
+        # 2. Define 'mean' for Reservoir and Rainfall
+        for col in ['Reservoir', 'Rainfall']:
+            if col in df.columns:
+                rules[col] = 'mean'
+        # 3. Define the rule for DroughtIndex
         if 'DroughtIndex' in df.columns: rules['DroughtIndex'] = get_mode_or_mean
 
         monthly_df = df.groupby(['YEAR', 'MON'] + id_cols, as_index=False).agg(rules)

@@ -184,7 +184,12 @@ make reimport-forecast # Re-import from existing Results/ (no SWAT run)
 make reimport-all      # clear-db then reimport-forecast then import-historical
 
 # Historical (STG)
-make import-historical # Insert Ping + Yom historical data (insert only, no delete)
+make add-historical                        # Full flow: download zip → unzip → aggregate → import
+make add-historical HIST_DRIVE_URL=<url>   # Same with a custom Drive zip link
+make download-historical                   # Download zip from Drive into swat_file_DB/hist_chunk/
+make unpack-historical-chunk               # Unzip hist_chunk/*.zip into historical_data/
+make aggregate-historical                  # Merge all chunk dirs → master ping/ yom/, clean up hist_chunk/
+make import-historical                     # Insert aggregated data into DB (insert only, no delete)
 make clear-ping        # Delete all Ping (mb_code=06) rows from all tables
 make clear-yom         # Delete all Yom (mb_code=08) rows from all tables
 make clear-db          # Delete ALL rows for both basins from all 24 tables

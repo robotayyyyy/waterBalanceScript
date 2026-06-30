@@ -4,14 +4,17 @@
         reimport-forecast reimport-all clear-db \
         download-drive unpack-yom unpack-ping unpack-swat unpack-historical unpack-all print-swat-dir \
         import-historical clear-ping clear-yom verify-db \
-        full-run install-cron uninstall-cron show-cron
+        full-run install-cron uninstall-cron show-cron \
+        download-historical unpack-historical-chunk aggregate-historical add-historical
 
 ROOT_DIR  := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 SWAT_DIR  := $(ROOT_DIR)/swat
 FORE_DIR  := $(ROOT_DIR)/swat_forecast
 HIST_DIR  := $(ROOT_DIR)/historical_data
 FILE_DB   := $(ROOT_DIR)/swat_file_DB
-DRIVE_URL := https://drive.google.com/drive/folders/1fCaorGy1KrrjTyVYX00a8CO88SsqChTm
+DRIVE_URL      := https://drive.google.com/drive/folders/1fCaorGy1KrrjTyVYX00a8CO88SsqChTm
+HIST_DRIVE_URL ?= https://drive.google.com/drive/folders/19rULsfW4JowiVAg0dVp3NMhigifFVRp0
+HIST_CHUNK_TMP := $(FILE_DB)/hist_chunk
 PYTHON    = $(SWAT_DIR)/env/bin/python3
 PYTHON_F  = $(FORE_DIR)/env/bin/python3
 PYTHON_H  = $(HIST_DIR)/env/bin/python3
@@ -111,7 +114,7 @@ reimport-all: clear-db reimport-forecast import-historical ## Clear DB then reim
 
 # ── Historical (2022-2024) — INSERT only, reuses existing Results/ ────────────
 
-import-historical: ## Historical: append 2022-2024 data for both basins (no SWAT re-run, no delete)
+import-historical: ## Historical: insert aggregated CSV data into DB (insert only, no delete)
 	cd $(HIST_DIR) && $(PYTHON_H) import_basin_7days.py \
 		&& $(PYTHON_H) import_basin_6months.py \
 		&& $(PYTHON_H) import_admin_7days.py \
@@ -127,7 +130,30 @@ full-run: run-all-forecast import-historical ## Full pipeline: forecast (DELETE+
 
 download-drive: ## Download all zips from Google Drive into swat_file_DB/
 	mkdir -p $(FILE_DB)
-	$(PYTHON_F) -m gdown --folder $(DRIVE_URL) -O $(FILE_DB)
+	gdown --folder $(DRIVE_URL) -O $(FILE_DB)
+
+# ── Historical chunk management ───────────────────────────────────────────────
+
+download-historical: ## Download historical zip from Drive into hist_chunk/ (override: HIST_DRIVE_URL=<url>)
+	mkdir -p $(HIST_CHUNK_TMP)
+	cd $(HIST_CHUNK_TMP) && gdown "$(HIST_DRIVE_URL)"
+
+unpack-historical-chunk: ## Unzip all zips in hist_chunk/ into historical_data/ (zip's top folder becomes chunk dir)
+	@for z in $(HIST_CHUNK_TMP)/*.zip; do \
+		[ -f "$$z" ] || { echo "No zip found in $(HIST_CHUNK_TMP)"; exit 1; }; \
+		echo "Unpacking $$z → $(HIST_DIR)/"; \
+		unzip -o "$$z" -d "$(HIST_DIR)"; \
+	done
+
+aggregate-historical: ## Aggregate all chunk dirs into master ping/ and yom/ files, then clean up hist_chunk/
+	cd $(HIST_DIR) && $(PYTHON_H) aggregate.py
+	rm -rf $(HIST_CHUNK_TMP)
+
+add-historical: ## Full flow: download zip → unzip → aggregate → import (override: HIST_DRIVE_URL=<url>)
+	$(MAKE) download-historical
+	$(MAKE) unpack-historical-chunk
+	$(MAKE) aggregate-historical
+	$(MAKE) import-historical
 
 unpack-yom: ## Unpack yom_week/month_TxtInOut.zip into yom/week/ and yom/month/
 	mkdir -p $(FORE_DIR)/yom/week  && unzip -o $(FILE_DB)/yom_week_TxtInOut.zip  -d $(FORE_DIR)/yom/week

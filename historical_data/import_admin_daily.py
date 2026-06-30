@@ -9,7 +9,7 @@ For each basin, same file is inserted into both 7days and 6months tables.
 """
 
 from pathlib import Path
-from _db import copy_insert, parse_date, read_csv, run, to_int, to_num
+from _db import copy_insert, copy_insert_stream, parse_date, read_csv, run, stream_csv, to_int, to_num
 
 ROOT = Path(__file__).parent
 DATA_DIR = Path(__file__).parent
@@ -65,31 +65,31 @@ def import_amphoe(cur):
         columns = ["date_sim", "mb_code", "amphoe_id", "amphoe", "province_id", "province",
                    "rainfall", "reservoir", "watersupply",
                    "water_demand", "water_balance", "drought_index", "runoff_index", "wb_level"]
-        headers, raw = read_csv(path)
-        rows = []
-        for r in raw:
-            row = dict(zip(headers, r))
-            rows.append([
-                parse_date(row["DateSim"]),
-                cfg["mb_code"],
-                str(row["Amphoe_ID"]).strip(),
-                row.get("Amphoe") or None,
-                str(row["Province_ID"]).strip(),
-                row.get("Province") or None,
-                to_num(row.get("Rainfall", "")),
-                to_num(row.get("Reservoir", "")),
-                to_num(row.get("WaterSupply", "")),
-                to_num(row.get("WaterDemand", "")),
-                to_num(row.get("WaterBalance", "")),
-                to_int(row.get("DroughtIndex", "")),
-                to_int(row.get("RunoffIndex", "")),
-                to_num(row.get("WB_level", "")),
-            ])
         for suffix in SUFFIXES:
             table = f"forecast_amphoe_daily_{suffix}"
             print(f"\n  {basin} Amphoe_Daily.csv → {table}")
-            copy_insert(cur, table, columns, rows)
-            print(f"    ✓ {len(rows)} rows inserted")
+            headers, raw = stream_csv(path)
+            def _rows(headers=headers, raw=raw, cfg=cfg):
+                for r in raw:
+                    row = dict(zip(headers, r))
+                    yield [
+                        parse_date(row["DateSim"]),
+                        cfg["mb_code"],
+                        str(row["Amphoe_ID"]).strip(),
+                        row.get("Amphoe") or None,
+                        str(row["Province_ID"]).strip(),
+                        row.get("Province") or None,
+                        to_num(row.get("Rainfall", "")),
+                        to_num(row.get("Reservoir", "")),
+                        to_num(row.get("WaterSupply", "")),
+                        to_num(row.get("WaterDemand", "")),
+                        to_num(row.get("WaterBalance", "")),
+                        to_int(row.get("DroughtIndex", "")),
+                        to_int(row.get("RunoffIndex", "")),
+                        to_num(row.get("WB_level", "")),
+                    ]
+            count = copy_insert_stream(cur, table, columns, _rows())
+            print(f"    ✓ {count} rows inserted")
 
 
 def import_tambon(cur):
@@ -102,33 +102,33 @@ def import_tambon(cur):
                    "province_id", "province",
                    "rainfall", "reservoir", "watersupply",
                    "water_demand", "water_balance", "drought_index", "runoff_index", "wb_level"]
-        headers, raw = read_csv(path)
-        rows = []
-        for r in raw:
-            row = dict(zip(headers, r))
-            rows.append([
-                parse_date(row["DateSim"]),
-                cfg["mb_code"],
-                str(row["Tambol_ID"]).strip(),
-                row.get("Tambol") or None,
-                str(row["Amphoe_ID"]).strip(),
-                row.get("Amphoe") or None,
-                str(row["Province_ID"]).strip(),
-                row.get("Province") or None,
-                to_num(row.get("Rainfall", "")),
-                to_num(row.get("Reservoir", "")),
-                to_num(row.get("WaterSupply", "")),
-                to_num(row.get("WaterDemand", "")),
-                to_num(row.get("WaterBalance", "")),
-                to_int(row.get("DroughtIndex", "")),
-                to_int(row.get("RunoffIndex", "")),
-                to_num(row.get("WB_level", "")),
-            ])
         for suffix in SUFFIXES:
             table = f"forecast_tambon_daily_{suffix}"
             print(f"\n  {basin} Tambol_Daily.csv → {table}")
-            copy_insert(cur, table, columns, rows)
-            print(f"    ✓ {len(rows)} rows inserted")
+            headers, raw = stream_csv(path)
+            def _rows(headers=headers, raw=raw, cfg=cfg):
+                for r in raw:
+                    row = dict(zip(headers, r))
+                    yield [
+                        parse_date(row["DateSim"]),
+                        cfg["mb_code"],
+                        str(row["Tambol_ID"]).strip(),
+                        row.get("Tambol") or None,
+                        str(row["Amphoe_ID"]).strip(),
+                        row.get("Amphoe") or None,
+                        str(row["Province_ID"]).strip(),
+                        row.get("Province") or None,
+                        to_num(row.get("Rainfall", "")),
+                        to_num(row.get("Reservoir", "")),
+                        to_num(row.get("WaterSupply", "")),
+                        to_num(row.get("WaterDemand", "")),
+                        to_num(row.get("WaterBalance", "")),
+                        to_int(row.get("DroughtIndex", "")),
+                        to_int(row.get("RunoffIndex", "")),
+                        to_num(row.get("WB_level", "")),
+                    ]
+            count = copy_insert_stream(cur, table, columns, _rows())
+            print(f"    ✓ {count} rows inserted")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ For each basin, same file is inserted into both 7days and 6months tables.
 """
 
 from pathlib import Path
-from _db import copy_insert, parse_date, read_csv, run, to_int, to_num, zero_pad_mb, zero_pad_sb
+from _db import copy_insert, copy_insert_stream, parse_date, read_csv, run, stream_csv, to_int, to_num, zero_pad_mb, zero_pad_sb
 
 ROOT = Path(__file__).parent
 DATA_DIR = Path(__file__).parent
@@ -102,29 +102,29 @@ def import_subbasin_l2(cur):
         columns = ["date_sim", "sbswat", "mb_code", "mb_name_t",
                    "rainfall", "reservoir", "watersupply",
                    "water_demand", "water_balance", "drought_index", "runoff_index", "wb_level"]
-        headers, raw = read_csv(path)
-        rows = []
-        for r in raw:
-            row = dict(zip(headers, r))
-            rows.append([
-                parse_date(row["DateSim"]),
-                int(row["Sbswat"]),
-                zero_pad_mb(row["MB_CODE"]),
-                row.get("MB_NAME_T")    or None,
-                row.get("Rainfall")     or None,
-                row.get("Reservoir")    or None,
-                row.get("WaterSupply")  or None,
-                row.get("WaterDemand")  or None,
-                row.get("WaterBalance") or None,
-                to_int(row.get("DroughtIndex", "")),
-                to_int(row.get("RunoffIndex", "")),
-                to_num(row.get("WB_level", "")),
-            ])
         for suffix in SUFFIXES:
             table = f"basin_subbasin_l2_daily_{suffix}"
             print(f"\n  {basin} Analysis_Sbswat.csv → {table}")
-            copy_insert(cur, table, columns, rows)
-            print(f"    ✓ {len(rows)} rows inserted")
+            headers, raw = stream_csv(path)
+            def _rows(headers=headers, raw=raw):
+                for r in raw:
+                    row = dict(zip(headers, r))
+                    yield [
+                        parse_date(row["DateSim"]),
+                        int(row["Sbswat"]),
+                        zero_pad_mb(row["MB_CODE"]),
+                        row.get("MB_NAME_T")    or None,
+                        row.get("Rainfall")     or None,
+                        row.get("Reservoir")    or None,
+                        row.get("WaterSupply")  or None,
+                        row.get("WaterDemand")  or None,
+                        row.get("WaterBalance") or None,
+                        to_int(row.get("DroughtIndex", "")),
+                        to_int(row.get("RunoffIndex", "")),
+                        to_num(row.get("WB_level", "")),
+                    ]
+            count = copy_insert_stream(cur, table, columns, _rows())
+            print(f"    ✓ {count} rows inserted")
 
 
 if __name__ == "__main__":

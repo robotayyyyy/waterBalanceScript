@@ -58,6 +58,27 @@ def to_int(v: str):
     return int(float(v)) if v else None
 
 
+def stream_csv(path: Path):
+    """Open a CSV lazily. Returns (headers, row_iterator) without loading the whole file."""
+    f = open(path, encoding="utf-8-sig", newline="")
+    try:
+        reader = csv.reader(f)
+        headers = [h.strip() for h in next(reader)]
+    except Exception:
+        f.close()
+        raise
+
+    def _rows():
+        try:
+            for row in reader:
+                if any(c.strip() for c in row):
+                    yield row
+        finally:
+            f.close()
+
+    return headers, _rows()
+
+
 def copy_insert(cur, table: str, columns, rows):
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter='\t', quoting=csv.QUOTE_MINIMAL)
@@ -65,6 +86,29 @@ def copy_insert(cur, table: str, columns, rows):
         writer.writerow(['' if v is None else v for v in row])
     buf.seek(0)
     cur.copy_from(buf, table, columns=columns, sep='\t', null='')
+
+
+def copy_insert_stream(cur, table: str, columns, row_iter, chunk_size=50_000):
+    """Bulk-insert from an iterator in chunks to limit peak memory usage. Returns row count."""
+    total = 0
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter='\t', quoting=csv.QUOTE_MINIMAL)
+    count = 0
+    for row in row_iter:
+        writer.writerow(['' if v is None else v for v in row])
+        count += 1
+        if count >= chunk_size:
+            buf.seek(0)
+            cur.copy_from(buf, table, columns=columns, sep='\t', null='')
+            total += count
+            buf = io.StringIO()
+            writer = csv.writer(buf, delimiter='\t', quoting=csv.QUOTE_MINIMAL)
+            count = 0
+    if count:
+        buf.seek(0)
+        cur.copy_from(buf, table, columns=columns, sep='\t', null='')
+        total += count
+    return total
 
 
 def run(importers):

@@ -12,11 +12,13 @@ Supports two date layouts found in SWAT outputs:
 """
 
 import csv
+import shutil
 from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 BASINS = ["ping", "yom"]
+SKIP_DIRS = {"env", "__pycache__", ".git"}
 
 
 def _sort_key(headers: list[str], row: list[str]):
@@ -30,12 +32,22 @@ def _sort_key(headers: list[str], row: list[str]):
 
 
 def find_chunk_dirs() -> list[Path]:
-    return sorted(
-        d for d in ROOT.iterdir()
-        if d.is_dir()
-        and d.name not in BASINS
-        and any((d / b).is_dir() for b in BASINS)
-    )
+    """Recursively find all dirs that directly contain ping/ or yom/ subdirs.
+    Stops recursing once a chunk dir is found, so nested zips don't double-count."""
+    master_dirs = {ROOT / b for b in BASINS}
+    result: list[Path] = []
+
+    def _walk(path: Path):
+        for d in sorted(path.iterdir()):
+            if not d.is_dir() or d in master_dirs or d.name in SKIP_DIRS:
+                continue
+            if any((d / b).is_dir() for b in BASINS):
+                result.append(d)
+            else:
+                _walk(d)
+
+    _walk(ROOT)
+    return result
 
 
 def aggregate():
@@ -44,7 +56,7 @@ def aggregate():
         print("No chunk directories found — nothing to aggregate.")
         return
 
-    print(f"Chunk dirs: {[d.name for d in chunk_dirs]}")
+    print(f"Chunk dirs: {[str(d.relative_to(ROOT)) for d in chunk_dirs]}")
 
     for basin in BASINS:
         master_dir = ROOT / basin
@@ -98,6 +110,12 @@ def aggregate():
 
             n_chunks = sum(1 for c in chunk_dirs if (c / basin / filename).exists())
             print(f"    {filename}: {len(unique_rows)} rows from {n_chunks} chunk(s)")
+
+    # Remove chunk dirs — master files are now the source of truth
+    top_level_dirs = {ROOT / d.relative_to(ROOT).parts[0] for d in chunk_dirs}
+    for d in sorted(top_level_dirs):
+        shutil.rmtree(d)
+        print(f"Removed: {d.name}/")
 
     print("\nAggregation complete.")
 

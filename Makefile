@@ -13,7 +13,7 @@ FORE_DIR  := $(ROOT_DIR)/swat_forecast
 HIST_DIR  := $(ROOT_DIR)/historical_data
 FILE_DB   := $(ROOT_DIR)/swat_file_DB
 DRIVE_URL      := https://drive.google.com/drive/folders/1fCaorGy1KrrjTyVYX00a8CO88SsqChTm
-HIST_DRIVE_URL ?= https://drive.google.com/drive/folders/19rULsfW4JowiVAg0dVp3NMhigifFVRp0
+HIST_DRIVE_URL ?=
 HIST_CHUNK_TMP := $(FILE_DB)/hist_chunk
 PYTHON    = $(SWAT_DIR)/env/bin/python3
 PYTHON_F  = $(FORE_DIR)/env/bin/python3
@@ -134,7 +134,8 @@ download-drive: ## Download all zips from Google Drive into swat_file_DB/
 
 # ── Historical chunk management ───────────────────────────────────────────────
 
-download-historical: ## Download historical zip from Drive into hist_chunk/ (override: HIST_DRIVE_URL=<url>)
+download-historical: ## Download historical zip from Drive into hist_chunk/ (requires: HIST_DRIVE_URL=<file-url>)
+	@[ -n "$(HIST_DRIVE_URL)" ] || { echo "ERROR: HIST_DRIVE_URL is not set. Usage: make add-historical HIST_DRIVE_URL=https://drive.google.com/file/d/<id>/view"; exit 1; }
 	mkdir -p $(HIST_CHUNK_TMP)
 	cd $(HIST_CHUNK_TMP) && gdown "$(HIST_DRIVE_URL)"
 

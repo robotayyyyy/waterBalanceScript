@@ -5,7 +5,7 @@
         download-drive unpack-yom unpack-ping unpack-swat unpack-historical unpack-all print-swat-dir \
         import-historical clear-ping clear-yom verify-db \
         full-run install-cron uninstall-cron show-cron \
-        download-historical unpack-historical-chunk aggregate-historical add-historical
+        download-historical unpack-historical-chunk aggregate-historical add-historical pull-historical
 
 ROOT_DIR  := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 SWAT_DIR  := $(ROOT_DIR)/swat
@@ -155,6 +155,11 @@ add-historical: ## Full flow: download zip → unzip → aggregate → import (o
 	$(MAKE) unpack-historical-chunk
 	$(MAKE) aggregate-historical
 	$(MAKE) import-historical
+
+# Example: make pull-historical HIST_DRIVE_URL="https://drive.google.com/file/d/1cUk4WpY17kDyfAE65I3QTmkbw8sW2y5i/view?usp=sharing"
+pull-historical: ## Download + unzip only, no aggregate (for pre-merged zips) (override: HIST_DRIVE_URL=<url>)
+	$(MAKE) download-historical
+	$(MAKE) unpack-historical-chunk
 
 unpack-yom: ## Unpack yom_week/month_TxtInOut.zip into yom/week/ and yom/month/
 	mkdir -p $(FORE_DIR)/yom/week  && unzip -o $(FILE_DB)/yom_week_TxtInOut.zip  -d $(FORE_DIR)/yom/week

@@ -46,8 +46,8 @@ run-week-yom: ## Forecast: run Yom weekly SWAT + import to DB + summary email
 	 $(PYTHON_F) yom/import_basin_7days.py && \
 	 $(PYTHON_F) yom/import_admin_7days.py && \
 	 $(PYTHON_F) yom/import_basin_daily.py && \
-	 $(PYTHON_F) yom/import_admin_daily.py) ; \
-	$(PYTHON_F) $(FORE_DIR)/send_summary.py week yom
+	 $(PYTHON_F) yom/import_admin_daily.py); EXIT=$$?; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py week yom; exit $$EXIT
 
 run-month-yom: ## Forecast: run Yom monthly SWAT + import to DB + summary email
 	mkdir -p $(YOM_M_LOG) && rm -f $(YOM_M_LOG)/run_state.json
@@ -57,8 +57,8 @@ run-month-yom: ## Forecast: run Yom monthly SWAT + import to DB + summary email
 	 $(PYTHON_F) yom/import_basin_6months.py && \
 	 $(PYTHON_F) yom/import_admin_6months.py && \
 	 $(PYTHON_F) yom/import_basin_daily.py && \
-	 $(PYTHON_F) yom/import_admin_daily.py) ; \
-	$(PYTHON_F) $(FORE_DIR)/send_summary.py month yom
+	 $(PYTHON_F) yom/import_admin_daily.py); EXIT=$$?; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py month yom; exit $$EXIT
 
 run-week-ping: ## Forecast: run Ping weekly SWAT + import to DB + summary email
 	mkdir -p $(PNG_W_LOG) && rm -f $(PNG_W_LOG)/run_state.json
@@ -68,8 +68,8 @@ run-week-ping: ## Forecast: run Ping weekly SWAT + import to DB + summary email
 	 $(PYTHON_F) ping/import_basin_7days.py && \
 	 $(PYTHON_F) ping/import_admin_7days.py && \
 	 $(PYTHON_F) ping/import_basin_daily.py && \
-	 $(PYTHON_F) ping/import_admin_daily.py) ; \
-	$(PYTHON_F) $(FORE_DIR)/send_summary.py week ping
+	 $(PYTHON_F) ping/import_admin_daily.py); EXIT=$$?; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py week ping; exit $$EXIT
 
 run-month-ping: ## Forecast: run Ping monthly SWAT + import to DB + summary email
 	mkdir -p $(PNG_M_LOG) && rm -f $(PNG_M_LOG)/run_state.json
@@ -79,12 +79,16 @@ run-month-ping: ## Forecast: run Ping monthly SWAT + import to DB + summary emai
 	 $(PYTHON_F) ping/import_basin_6months.py && \
 	 $(PYTHON_F) ping/import_admin_6months.py && \
 	 $(PYTHON_F) ping/import_basin_daily.py && \
-	 $(PYTHON_F) ping/import_admin_daily.py) ; \
-	$(PYTHON_F) $(FORE_DIR)/send_summary.py month ping
+	 $(PYTHON_F) ping/import_admin_daily.py); EXIT=$$?; \
+	$(PYTHON_F) $(FORE_DIR)/send_summary.py month ping; exit $$EXIT
 
-run-all-forecast: run-week-yom run-week-ping ## Forecast: run ALL (weeks always run; months skipped if data unavailable)
-	-$(MAKE) run-month-yom
-	-$(MAKE) run-month-ping
+run-all-forecast: ## Forecast: run all 4 pipelines independently; exit non-zero if any failed
+	FAIL=0; \
+	$(MAKE) run-week-yom  || FAIL=1; \
+	$(MAKE) run-week-ping || FAIL=1; \
+	$(MAKE) run-month-yom || FAIL=1; \
+	$(MAKE) run-month-ping || FAIL=1; \
+	exit $$FAIL
 
 # ── Forecast import only — no SWAT re-run, reuses existing Results/ ──────────
 
